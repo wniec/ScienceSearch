@@ -1,6 +1,5 @@
 import json
-import string
-import webbrowser
+import wikicrawler
 import word_matrix as wma
 from wikicrawler import get_link
 import PySimpleGUI as sg
@@ -43,9 +42,11 @@ def get_matches(text: string):
     return [(sites[i], get_link(sites[i])) for i in best]
 
 
+
+# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     wm = wma.WordMatrix()
     wm.read()
-    with open('jsons/sites.json', 'r') as read_file:
+    with open('sites.json', 'r') as read_file:
         sites = json.load(read_file)
     gui()
