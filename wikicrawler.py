@@ -1,5 +1,5 @@
 import json
-import string
+
 import nltk
 import wikipediaapi as wpa
 from nltk.corpus import stopwords
@@ -55,7 +55,7 @@ def main():
         cat = wiki_wiki.page(cat_name)
         sites.update(get_category_members(cat.categorymembers))
     site_list = list(sites)[:10]
-    with open("jsons/sites.json", "w") as write_file:
+    with open("sites.json", "w") as write_file:
         json.dump([site.title for site in site_list], write_file)
     print("Downloading sites content started")
     words, dicts = get_content(site_list)
@@ -63,9 +63,5 @@ def main():
     return words, dicts
 
 
-def get_link(title: string) -> string:
-    return "https://en.wikipedia.org/wiki/"+title.replace(" ", "_")
-
-
 if __name__ == "__main__":
-    word_matrix, word_index = main()
+    word_matrix,word_index = main()
