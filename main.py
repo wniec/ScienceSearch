@@ -12,8 +12,7 @@ def create_window(matches=None):
     layout = [head1, head2]
     if matches is not None:
         for name, link in matches:
-            layout.append([sg.Text(name + ":")])
-            layout.append([sg.Text("\t" + link)])
+            layout.append([sg.Text(name, tooltip=link,enable_events=True, key=f'URL {link}')])
     window = sg.Window('Simple data entry window', layout, finalize=True)
     window['Input1'].bind("<Return>", "_Enter")
     return window
@@ -32,6 +31,9 @@ def gui():
             window = create_window(matches)
         if event == sg.WIN_CLOSED:
             break
+        elif event.startswith("URL "):
+            url = event.split(' ')[1]
+            webbrowser.open(url)
     window.close()
     return
 
