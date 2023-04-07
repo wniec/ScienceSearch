@@ -11,8 +11,8 @@ class Vectorizer:
         wnl = WordNetLemmatizer()
         result = np.zeros(len(self.word_index), dtype=np.float64)
         for word in text.split():
-            if wnl.lemmatize("".join(filter(lambda x: x.isalpha(), word))
-                             ).casefold() in self.word_index:
-                index = self.word_index[word]
+            word_lemma = wnl.lemmatize("".join(filter(lambda x: x.isalpha(), word))).casefold()
+            if word_lemma in self.word_index:
+                index = self.word_index[word_lemma]
                 result[int(index)] += 1
         return result

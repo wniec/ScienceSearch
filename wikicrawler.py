@@ -35,12 +35,12 @@ def get_category_members(category_members, level=0, max_level=1):
     for c in category_members.values():
         if c.ns == wpa.Namespace.CATEGORY and level < max_level:
             result.update(get_category_members(c.categorymembers, level=level + 1, max_level=max_level))
-        elif c.ns != wpa.Namespace.CATEGORY:
+        elif c.ns != wpa.Namespace.CATEGORY and not c.title.startswith("List"):
             result.add(c)
     return result
 
 
-def main():
+def main(length: int):
     nltk.download("punkt")
     nltk.download('stopwords')
     nltk.download("wordnet")
@@ -54,7 +54,7 @@ def main():
         cat_name = "Category:" + c
         cat = wiki_wiki.page(cat_name)
         sites.update(get_category_members(cat.categorymembers))
-    site_list = list(sites)[:10]
+    site_list = list(sites)[:length]
     with open("jsons/sites.json", "w") as write_file:
         json.dump([site.title for site in site_list], write_file)
     print("Downloading sites content started")

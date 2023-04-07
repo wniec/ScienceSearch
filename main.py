@@ -1,25 +1,26 @@
 import json
-import wikicrawler
+import string
+import webbrowser
 import word_matrix as wma
 from wikicrawler import get_link
-import PySimpleGUI as sg
+import PySimpleGUI as sG
 
 
 def create_window(matches=None):
-    head1 = [sg.Text("Welcome to ScienceSearch")]
-    head2 = [sg.Button("Search"), sg.Input('', key='Input1')]
+    head1 = [sG.Text("Welcome to ScienceSearch")]
+    head2 = [sG.Button("Search"), sG.Input('', key='Input1')]
     layout = [head1, head2]
     if matches is not None:
         for name, link in matches:
-            layout.append([sg.Text(name, tooltip=link,enable_events=True, key=f'URL {link}')])
-    window = sg.Window('Simple data entry window', layout, finalize=True)
+            layout.append([sG.Text(name, tooltip=link, enable_events=True, key=f'URL {link}')])
+    window = sG.Window('ScienceSearch', layout, finalize=True)
     window['Input1'].bind("<Return>", "_Enter")
     return window
 
 
 def gui():
-    sg.theme('DarkGrey')
-    sg.set_options(font=("Impact", 16))
+    sG.theme('DarkGrey')
+    sG.set_options(font=("Montserrat", 16))
     window = create_window()
     while True:
         event, values = window.read()
@@ -28,7 +29,7 @@ def gui():
             matches = get_matches(text)
             window.close()
             window = create_window(matches)
-        if event == sg.WIN_CLOSED:
+        if event == sG.WIN_CLOSED:
             break
         elif event.startswith("URL "):
             url = event.split(' ')[1]
@@ -42,11 +43,9 @@ def get_matches(text: string):
     return [(sites[i], get_link(sites[i])) for i in best]
 
 
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     wm = wma.WordMatrix()
     wm.read()
-    with open('sites.json', 'r') as read_file:
+    with open('jsons/sites.json', 'r') as read_file:
         sites = json.load(read_file)
     gui()

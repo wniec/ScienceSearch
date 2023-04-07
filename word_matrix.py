@@ -57,8 +57,8 @@ class WordMatrix:
 
     def compare(self, text, top):
         vector = self.vector_func.vectorize(text)
-        result = np.abs((vector.T @ self.word_matrix.T) / np.sqrt(np.sum(
-            self.word_matrix ** 2, axis=1)) / np.sqrt(np.sum(vector ** 2)))
+        result = np.abs((vector.T @ self.word_matrix.T)) / np.sqrt(np.sum(
+            self.word_matrix ** 2, axis=1))
         ind = np.argpartition(result, -top)[-top:]
         return ind[np.argsort(-result[ind])]
 
