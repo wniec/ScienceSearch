@@ -1,20 +1,52 @@
 import json
 import wikicrawler
 import word_matrix as wma
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from wikicrawler import get_link
+import PySimpleGUI as sg
+
+
+def create_window(matches=None):
+    head1 = [sg.Text("Welcome to ScienceSearch")]
+    head2 = [sg.Button("Search"), sg.Input('', key='Input1')]
+    layout = [head1, head2]
+    if matches is not None:
+        for name, link in matches:
+            layout.append([sg.Text(name, tooltip=link,enable_events=True, key=f'URL {link}')])
+    window = sg.Window('Simple data entry window', layout, finalize=True)
+    window['Input1'].bind("<Return>", "_Enter")
+    return window
+
+
+def gui():
+    sg.theme('DarkGrey')
+    sg.set_options(font=("Impact", 16))
+    window = create_window()
+    while True:
+        event, values = window.read()
+        if event == "Search" or event == "Input1" + "_Enter":
+            text = values["Input1"]
+            matches = get_matches(text)
+            window.close()
+            window = create_window(matches)
+        if event == sg.WIN_CLOSED:
+            break
+        elif event.startswith("URL "):
+            url = event.split(' ')[1]
+            webbrowser.open(url)
+    window.close()
+    return
+
+
+def get_matches(text: string):
+    best = wm.compare(text, 4)
+    return [(sites[i], get_link(sites[i])) for i in best]
+
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    words, dicts = wikicrawler.main()
     wm = wma.WordMatrix()
-    wm.adjust_word_matrix(words,dicts)
-    wm.save()
     wm.read()
-    wm.info()
-    text = input("ENTER SENTENCE TO SEARCH ")
-    i = wm.compare(text)
     with open('sites.json', 'r') as read_file:
         sites = json.load(read_file)
-    print(sites[i])
+    gui()
