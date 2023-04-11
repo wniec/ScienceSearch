@@ -41,14 +41,12 @@ def gui():
 
 def get_matches(text: string):
     best = wm.compare(text, 4)
-    print(best)
     return [(sites[i], get_link(sites[i])) for i in best]
 
 
 if __name__ == '__main__':
     wm = wma.WordMatrix()
     wm.read()
-    with open('venv/jsons/sites.json', 'r') as read_file:
+    with open('venv/saved/sites.json', 'r') as read_file:
         sites = json.load(read_file)
-    print(len(sites))
     gui()

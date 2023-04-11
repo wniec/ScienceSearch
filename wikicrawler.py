@@ -53,13 +53,13 @@ def main(length: int,buffer_size: int = 10):
         cat = wiki_wiki.page(cat_name)
         sites.update(get_category_members(cat.categorymembers))
     site_list = list(sites)[:length]
-    with open("venv/jsons/sites.json", "w") as write_file:
+    with open("venv/saved/sites.json", "w") as write_file:
         json.dump([site.title for site in site_list], write_file)
     print("Downloading sites content started")
     words = dict()
     dicts = []
     for i in range(len(site_list)//buffer_size):
-        get_content(site_list[i*buffer_size:i*(buffer_size+1)], words, dicts)
+        get_content(site_list[i*buffer_size:(i+1)*buffer_size], words, dicts)
     print("Downloading sites content ended")
     return words, dicts
 

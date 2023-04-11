@@ -34,15 +34,13 @@ class WordMatrix:
         self.vector_func = Vectorizer(self.inverse_index)
 
     def save(self):
-        with open("venv/pickles/matrix.pkl", "wb") as write_file:
-            pkl.dump(self.word_matrix, write_file)
-        with open("venv/pickles/dictionary.pkl", "wb") as write_file:
+        np.save("venv/saved/matrix.npy", self.word_matrix)
+        with open("venv/saved/dictionary.pkl", "wb") as write_file:
             pkl.dump(self.word_index, write_file)
 
     def read(self):
-        with open("venv/pickles/matrix.pkl", "rb") as read_file:
-            self.word_matrix = pkl.load(read_file)
-        with open('venv/pickles/dictionary.pkl', 'rb') as read_file:
+        self.word_matrix = np.load("venv/saved/matrix.npy", allow_pickle=True)
+        with open('venv/saved/dictionary.pkl', 'rb') as read_file:
             self.word_index = pkl.load(read_file)
         self.inverse_index = {self.word_index[i]: i for i in self.word_index}
         self.vector_func = Vectorizer(self.inverse_index)
