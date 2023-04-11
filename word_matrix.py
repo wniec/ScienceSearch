@@ -1,6 +1,5 @@
 import numpy as np
-import json
-from json import JSONEncoder
+import pickle as pkl
 from vectorizer import Vectorizer
 
 
@@ -27,7 +26,7 @@ class WordMatrix:
         print("frequency normalization started")
         m = np.log10(np.array([n / words[word_index[i]] for i in range(len(keys))]))
         word_matrix = word_matrix * m
-        lengths = 1 / np.sqrt(np.sum(word_matrix ** 2, axis=1))
+        lengths = np.nan_to_num(1 / np.sqrt(np.sum(word_matrix ** 2, axis=1)), False, nan=0.0, posinf=0.0, neginf=0.0)
         word_matrix = (word_matrix.T * lengths).T
         self.word_index = word_index
         self.inverse_index = inverse_index
@@ -35,18 +34,16 @@ class WordMatrix:
         self.vector_func = Vectorizer(self.inverse_index)
 
     def save(self):
-        numpy_data = {"wordMatrix": self.word_matrix}
-        with open("jsons/matrix.json", "w") as write_file:
-            json.dump(numpy_data, write_file, cls=NpArrayEncoder)
-        with open("jsons/dictionary.json", "w") as write_file:
-            json.dump(self.word_index, write_file)
+        with open("venv/pickles/matrix.pkl", "wb") as write_file:
+            pkl.dump(self.word_matrix, write_file)
+        with open("venv/pickles/dictionary.pkl", "wb") as write_file:
+            pkl.dump(self.word_index, write_file)
 
     def read(self):
-        with open("jsons/matrix.json", "r") as read_file:
-            decoded_array = json.load(read_file)
-            self.word_matrix = np.asarray(decoded_array["wordMatrix"])
-        with open('jsons/dictionary.json', 'r') as read_file:
-            self.word_index = json.load(read_file)
+        with open("venv/pickles/matrix.pkl", "rb") as read_file:
+            self.word_matrix = pkl.load(read_file)
+        with open('venv/pickles/dictionary.pkl', 'rb') as read_file:
+            self.word_index = pkl.load(read_file)
         self.inverse_index = {self.word_index[i]: i for i in self.word_index}
         self.vector_func = Vectorizer(self.inverse_index)
 
@@ -67,10 +64,3 @@ def lower_rank_approximation(matrix):
     U, D, V = np.linalg.svd(matrix)
     r = len(D)
     return U[:, :r] @ np.diag(D) @ V[:r, :]
-
-
-class NpArrayEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return JSONEncoder.default(self, obj)

@@ -46,6 +46,6 @@ def get_matches(text: string):
 if __name__ == '__main__':
     wm = wma.WordMatrix()
     wm.read()
-    with open('jsons/sites.json', 'r') as read_file:
+    with open('venv/pickles/sites.pkl', 'rb') as read_file:
         sites = json.load(read_file)
     gui()

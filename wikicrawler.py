@@ -1,4 +1,4 @@
-import json
+import pickle as pkl
 import string
 import nltk
 import wikipediaapi as wpa
@@ -6,9 +6,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
 
-def get_content(sites):
-    words = dict()
-    dicts = []
+def get_content(sites, words, dicts):
     wnl = WordNetLemmatizer()
     en_stops = set(wnl.lemmatize(word) for word in stopwords.words('english'))
     for site in sites:
@@ -27,7 +25,6 @@ def get_content(sites):
                     words[s] += 1
                 else:
                     words[s] = 1
-    return words, dicts
 
 
 def get_category_members(category_members, level=0, max_level=1):
@@ -40,7 +37,7 @@ def get_category_members(category_members, level=0, max_level=1):
     return result
 
 
-def main(length: int):
+def main(length: int,buffer_size: int = 10):
     nltk.download("punkt")
     nltk.download('stopwords')
     nltk.download("wordnet")
@@ -55,10 +52,13 @@ def main(length: int):
         cat = wiki_wiki.page(cat_name)
         sites.update(get_category_members(cat.categorymembers))
     site_list = list(sites)[:length]
-    with open("jsons/sites.json", "w") as write_file:
-        json.dump([site.title for site in site_list], write_file)
+    with open("venv/pickles/sites.pkl", "wb") as write_file:
+        pkl.dump([site.title for site in site_list], write_file)
     print("Downloading sites content started")
-    words, dicts = get_content(site_list)
+    words = dict()
+    dicts = []
+    for i in range(len(site_list)//buffer_size):
+        get_content(site_list[i*buffer_size:i*(buffer_size+1)], words, dicts)
     print("Downloading sites content ended")
     return words, dicts
 
@@ -68,4 +68,4 @@ def get_link(title: string) -> string:
 
 
 if __name__ == "__main__":
-    word_matrix, word_index = main()
+    word_matrix, word_index = main(100)
