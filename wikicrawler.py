@@ -1,3 +1,4 @@
+import json
 import pickle as pkl
 import string
 import nltk
@@ -52,8 +53,8 @@ def main(length: int,buffer_size: int = 10):
         cat = wiki_wiki.page(cat_name)
         sites.update(get_category_members(cat.categorymembers))
     site_list = list(sites)[:length]
-    with open("venv/pickles/sites.pkl", "wb") as write_file:
-        pkl.dump([site.title for site in site_list], write_file)
+    with open("venv/jsons/sites.json", "w") as write_file:
+        json.dump([site.title for site in site_list], write_file)
     print("Downloading sites content started")
     words = dict()
     dicts = []
