@@ -1,5 +1,4 @@
 import json
-import pickle as pkl
 import string
 import webbrowser
 import word_matrix as wma
@@ -47,6 +46,6 @@ def get_matches(text: string):
 if __name__ == '__main__':
     wm = wma.WordMatrix()
     wm.read()
-    with open('venv/saved/sites.json', 'r') as read_file:
+    with open('saved/sites.json', 'r') as read_file:
         sites = json.load(read_file)
     gui()
