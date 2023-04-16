@@ -5,7 +5,6 @@ from urllib.error import HTTPError
 import nltk.corpus
 import nltk
 import requests
-import wikipediaapi as wpa
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from bs4 import BeautifulSoup as bs
@@ -15,9 +14,10 @@ from urllib.parse import quote
 dictionary = set(nltk.corpus.words.words())
 
 
-def get_content(sites: list[wpa.Wikipedia.page], words: dict, dicts: list[dict], word_count: dict):
+def get_content(sites: list[string], words: dict, dicts: list[dict], word_count: dict):
     wnl = WordNetLemmatizer()
     en_stops = set(wnl.lemmatize(word) for word in stopwords.words('english'))
+    downloaded_sites = []
     for site in sites:
         link = get_link(site)
         try:
@@ -42,8 +42,10 @@ def get_content(sites: list[wpa.Wikipedia.page], words: dict, dicts: list[dict],
                         word_count[s] += 1
                     else:
                         word_count[s] = 1
+            downloaded_sites.append(site)
         except HTTPError:
             pass
+    return downloaded_sites
 
 
 def search(url, category, maxdepth, depth=0):
@@ -76,20 +78,25 @@ def main(length: int, buffer_size: int = 10):
     categories = ["Physics", "Mathematics", "Computer_science", "Astronomy"]
     sites = set()
     for category in categories:
+        print(category)
         start = "https://en.wikipedia.org/wiki/Category:"+category
         sites.update(search(start, category, 2))
     site_list = list(sites)[:length]
-    print("total: ", len(site_list), " sites")
-    with open("saved/sites.json", "w") as write_file:
-        json.dump([title(site) for site in site_list], write_file)
+    print("total: ", len(site_list), " links")
     print("Downloading sites content started")
     words = dict()
     word_count = dict()
     dicts = []
+    new_sites = []
     for i in range(len(site_list) // buffer_size):
-        get_content(site_list[i * buffer_size:(i + 1) * buffer_size], words, dicts, word_count)
+        downloaded_sites = get_content(site_list[i * buffer_size:(i + 1) * buffer_size], words, dicts, word_count)
+        for site in downloaded_sites:
+            new_sites.append(site)
+    with open("saved/sites.json", "w") as write_file:
+        json.dump([title(site) for site in new_sites], write_file)
     print("Downloading sites content ended")
     reduce(dicts, word_count, words, length)
+    print("total: ", len(new_sites), " sites")
     print("total: ", len(words), " words")
     with open("saved/words.json", "w") as write_file:
         json.dump(words, write_file)
@@ -105,7 +112,7 @@ def reduce(dicts: list[dict], word_count: dict, words: dict, n: int):
                     d.pop(word)
             to_remove.add(word)
     for word in words:
-        if words[word] <3:
+        if words[word] < 3:
             for d in dicts:
                 if word in d:
                     d.pop(word)

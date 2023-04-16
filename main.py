@@ -46,6 +46,8 @@ def get_matches(text: string):
 if __name__ == '__main__':
     wm = wma.WordMatrix()
     wm.read()
-    with open('saved/sites.json', 'r') as read_file:
-        sites = json.load(read_file)
-    gui()
+    wm.lower_rank()
+    wm.save()
+    #with open('saved/sites.json', 'r') as read_file:
+    #    sites = json.load(read_file)
+    #gui()
