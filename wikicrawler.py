@@ -1,71 +1,137 @@
 import json
-import pickle as pkl
+import re
 import string
+from urllib.error import HTTPError
+import nltk.corpus
 import nltk
-import wikipediaapi as wpa
+import requests
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from bs4 import BeautifulSoup as bs
+import urllib.request
+from urllib.parse import quote
+
+dictionary = set(nltk.corpus.words.words())
 
 
-def get_content(sites, words, dicts):
+def get_content(sites: list[string], words: dict, dicts: list[dict], word_count: dict):
     wnl = WordNetLemmatizer()
     en_stops = set(wnl.lemmatize(word) for word in stopwords.words('english'))
+    downloaded_sites = []
     for site in sites:
-        dicts.append(dict())
-        content = site.text
-        word_list = content.split()
-        stemmed = [wnl.lemmatize("".join(filter(lambda x: x.isalpha(), word))
-                                 ).casefold() for word in word_list]
-        for s in stemmed:
-            if s not in en_stops:
-                if s in dicts[-1]:
-                    dicts[-1][s] += 1
-                else:
-                    dicts[-1][s] = 1
-                if s in words:
-                    words[s] += 1
-                else:
-                    words[s] = 1
+        link = get_link(site)
+        try:
+            webpage = str(urllib.request.urlopen(link).read())
+            dicts.append(dict())
+            soup = bs(webpage, features="html.parser")
+            site_text = clean(soup.getText())
+            word_list = site_text.split()[1:]
+            stemmed = [wnl.lemmatize(word).casefold() for word in word_list if (
+                    (word in dictionary or word[0].isupper()) and word not in en_stops)]
+            for s in stemmed:
+                if s not in en_stops:
+                    if s in dicts[-1]:
+                        dicts[-1][s] += 1
+                    else:
+                        dicts[-1][s] = 1
+                        if s in words:
+                            words[s] += 1
+                        else:
+                            words[s] = 1
+                    if s in word_count:
+                        word_count[s] += 1
+                    else:
+                        word_count[s] = 1
+            downloaded_sites.append(site)
+        except HTTPError:
+            pass
+    return downloaded_sites
 
 
-def get_category_members(category_members, level=0, max_level=1):
+def search(url, category, maxdepth, depth=0):
+    page = requests.get(url)
+    data = page.text
+    soup = bs(data, features="html.parser")
     result = set()
-    for c in category_members.values():
-        if c.ns == wpa.Namespace.CATEGORY and level < max_level:
-            result.update(get_category_members(c.categorymembers, level=level + 1, max_level=max_level))
-        elif c.ns != wpa.Namespace.CATEGORY and not c.title.startswith("List"):
-            result.add(c)
+    txt = soup.getText()
+    if category.casefold() in txt or category in txt:
+        for link in soup.find_all('a'):
+            href = link.get('href')
+            if href and href.startswith('/wiki/'):
+                rest = href[6:]
+                if maxdepth >= depth and not re.match(
+                        'Category*|Wikipedia*|Special*|Wayback*|List*|File*|.*(identifier)$|Help*', rest):
+                    result.add(rest)
+                elif maxdepth > depth and re.match('Category*|List*', rest) and not rest.startswith('Category:Commons'):
+                    new_url = "https://en.wikipedia.org/wiki/" + rest
+                    result.update(search(new_url, category, maxdepth, depth + 1))
     return result
 
 
-def main(length: int,buffer_size: int = 10):
+def main(length: int, buffer_size: int = 10):
     nltk.download("punkt")
+    nltk.download('words')
     nltk.download('stopwords')
     nltk.download("wordnet")
     nltk.download("omw-1.4")
-    wiki_wiki = wpa.Wikipedia('en')
-    categories = ["Physics", "Mathematics", "Medicine", "Chemistry", "Biology", "Astronomy"]
-    sites = set()
     print("Downloading categories started")
-    for c in categories[:1]:
-        print(c)
-        cat_name = "Category:" + c
-        cat = wiki_wiki.page(cat_name)
-        sites.update(get_category_members(cat.categorymembers))
+    categories = ["Physics", "Mathematics", "Computer_science", "Astronomy"]
+    sites = set()
+    for category in categories:
+        print(category)
+        start = "https://en.wikipedia.org/wiki/Category:"+category
+        sites.update(search(start, category, 2))
     site_list = list(sites)[:length]
-    with open("venv/saved/sites.json", "w") as write_file:
-        json.dump([site.title for site in site_list], write_file)
+    print("total: ", len(site_list), " links")
     print("Downloading sites content started")
     words = dict()
+    word_count = dict()
     dicts = []
-    for i in range(len(site_list)//buffer_size):
-        get_content(site_list[i*buffer_size:(i+1)*buffer_size], words, dicts)
+    new_sites = []
+    for i in range(len(site_list) // buffer_size):
+        downloaded_sites = get_content(site_list[i * buffer_size:(i + 1) * buffer_size], words, dicts, word_count)
+        for site in downloaded_sites:
+            new_sites.append(site)
+    with open("saved/sites.json", "w") as write_file:
+        json.dump([title(site) for site in new_sites], write_file)
     print("Downloading sites content ended")
+    reduce(dicts, word_count, words, length)
+    print("total: ", len(new_sites), " sites")
+    print("total: ", len(words), " words")
+    with open("saved/words.json", "w") as write_file:
+        json.dump(words, write_file)
     return words, dicts
 
 
-def get_link(title: string) -> string:
-    return "https://en.wikipedia.org/wiki/"+title.replace(" ", "_")
+def reduce(dicts: list[dict], word_count: dict, words: dict, n: int):
+    to_remove = set()
+    for word in word_count:
+        if word_count[word] < 20:
+            for d in dicts:
+                if word in d:
+                    d.pop(word)
+            to_remove.add(word)
+    for word in words:
+        if words[word] < 3:
+            for d in dicts:
+                if word in d:
+                    d.pop(word)
+            to_remove.add(word)
+    for word in list(to_remove):
+        words.pop(word)
+
+
+def get_link(site_title: string) -> string:
+    return "https://en.wikipedia.org/wiki/" + quote(site_title.replace(" ", "_"))
+
+
+def title(site: string) -> string:
+    return site.replace("_", " ")
+
+
+def clean(text: string) -> string:
+    partly = re.sub('\\\\t|\\\\n|\\\\r|\\\\a|\\\\f|\\\\v|\\\\b', " ", text)
+    return re.sub('[^a-zA-Z]+', ' ', partly)
 
 
 if __name__ == "__main__":
