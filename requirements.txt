@@ -11,3 +11,16 @@ urllib3==1.26.15
 Wikipedia-API==0.5.8
 numpy~=1.24.2
 PySimpleGUI~=4.60.4
+jupyter~=1.0.0
+pip~=23.0.1
+attrs~=22.2.0
+wheel~=0.38.4
+Pillow~=9.4.0
+tornado~=6.2
+Jinja2~=3.1.2
+setuptools~=65.5.0
+packaging~=23.0
+pyparsing~=3.0.9
+future~=0.18.3
+beautifulsoup4~=4.12.2
+scipy~=1.10.1

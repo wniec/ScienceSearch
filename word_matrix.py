@@ -1,7 +1,6 @@
 import queue
 import numpy as np
 import pickle as pkl
-import scipy
 from vectorizer import Vectorizer
 from scipy.sparse.linalg import svds
 from scipy.sparse import csr_matrix
@@ -9,6 +8,7 @@ from scipy.sparse import csr_matrix
 
 class WordMatrix:
     def __init__(self, matrix: np.array = None, index: dict = None):
+        self.lengths = None
         self.V = None
         self.D = None
         self.U = None
@@ -34,24 +34,29 @@ class WordMatrix:
         m = np.log10(np.array([n / words[word_index[i]] for i in range(len(keys))]))
         self.word_matrix = self.word_matrix * m
         lengths = np.nan_to_num(1 / np.sqrt(
-            np.array([sum(wm.word_matrix[i,:] ** 2) for i in range(
-            len(dicts))])), False, nan=0.0, posinf=0.0, neginf=0.0)
-        self.word_matrix = (self.word_matrix.T * lengths).T
+            np.array([sum(self.word_matrix[i, :] ** 2) for i in range(
+                len(dicts))])), False, nan=0.0, posinf=0.0, neginf=0.0)
+        self.word_matrix = self.word_matrix.T
+        self.word_matrix *= lengths
+        self.word_matrix = self.word_matrix.T
+        self.lengths = np.sqrt([sum(self.word_matrix[i, :] ** 2) for i in range(len(self.word_matrix))])
         self.word_matrix = csr_matrix(self.word_matrix)
         self.word_index = word_index
-        self.inverse_index = inverse_index
         self.lower_rank()
-        self.vector_func = Vectorizer(self.inverse_index)
 
     def save(self):
         np.save("saved/U.npy", self.U)
         np.save("saved/V.npy", self.V)
         np.save("saved/D.npy", self.D)
+        np.save("saved/lengths.npy", self.lengths)
         with open("saved/dictionary.pkl", "wb") as write_file:
             pkl.dump(self.word_index, write_file)
 
     def read(self):
-        self.word_matrix = scipy.load("saved/matrix.npy", allow_pickle=True, mmap_mode='r')
+        self.U = np.load("saved/U.npy", allow_pickle=True, mmap_mode='r')
+        self.V = np.load("saved/V.npy", allow_pickle=True, mmap_mode='r')
+        self.D = np.load("saved/D.npy", allow_pickle=True, mmap_mode='r')
+        self.lengths = np.load("saved/lengths.npy", allow_pickle=True, mmap_mode='r')
         with open('saved/dictionary.pkl', 'rb') as read_file:
             self.word_index = pkl.load(read_file)
         self.inverse_index = {self.word_index[i]: i for i in self.word_index}
@@ -64,10 +69,7 @@ class WordMatrix:
 
     def compare(self, text, top):
         vector = self.vector_func.vectorize(text)
-        lengths = np.sqrt([sum(self.word_matrix[i, :] ** 2) for i in range(len(self.word_matrix))])
-        print(lengths)
-        result = np.abs((vector.T @ self.word_matrix.T)) / lengths
-        print(result.shape)
+        result = np.abs((((vector.T @ self.V.T) @ np.diag(self.D).T) @ self.U.T)) / self.lengths
         best = queue.PriorityQueue()
         for i in range(top):
             best.put((result[i], i))

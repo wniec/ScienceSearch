@@ -9,7 +9,7 @@ class Vectorizer:
 
     def vectorize(self, text: string) -> np.array:
         wnl = WordNetLemmatizer()
-        result = np.zeros(len(self.word_index), dtype=np.float64)
+        result = np.zeros(len(self.word_index))
         for word in text.split():
             word_lemma = wnl.lemmatize("".join(filter(lambda x: x.isalpha(), word))).casefold()
             if word_lemma in self.word_index:

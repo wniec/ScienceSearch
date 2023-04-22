@@ -1,5 +1,4 @@
 import json
-import pickle as pkl
 import string
 import webbrowser
 import word_matrix as wma
@@ -40,13 +39,13 @@ def gui():
 
 
 def get_matches(text: string):
-    best = wm.compare(text, 4)
+    best = wm.compare(text, 5)
     return [(sites[i], get_link(sites[i])) for i in best]
 
 
 if __name__ == '__main__':
     wm = wma.WordMatrix()
     wm.read()
-    with open('venv/saved/sites.json', 'r') as read_file:
+    with open('saved/sites.json', 'r') as read_file:
         sites = json.load(read_file)
     gui()
